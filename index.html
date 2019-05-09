@@ -20,11 +20,10 @@
 
     div {
       position: absolute;
-      top: 5px;
-      left: 5px;
-      color: #fff;
-      font-size: 40px;
-      font-family: Arial;
+      top: 4px;
+      left: -webkit-calc(50%);
+      left: calc(50%);
+      color: aliceblue;
     }
   </style>
   <script src="http://www.jq22.com/jquery/jquery-1.10.2.js"></script>
@@ -32,10 +31,12 @@
 </head>
 
 <body style="zoom: 1;">
-  
+  <!-- <div>
+    <h1>极地时钟</h1>
+  </div> -->
+
   <canvas width="1200" height="1200"></canvas>
 
-  
   <script>var usr_color = 160; //Change value to change color scheme
 
     window.requestAnimFrame = (function () {
@@ -128,27 +129,27 @@
           var d = new Date();
           var day = d.getDay();
           if (day == 1) {
-            var day = "Mon"
+            var day = "一"
           }
           else if (day == 2) {
-            var day = "Tue"
+            var day = "二"
           }
           else if (day == 3) {
-            var day = "Wed"
+            var day = "三"
           }
           else if (day == 4) {
-            var day = "Thu"
+            var day = "四"
           }
           else if (day == 5) {
-            var day = "Fri"
+            var day = "五"
           }
           else if (day == 6) {
-            var day = "Sat"
+            var day = "六"
           }
           else if (day == 7) {
-            var day = "Sun"
+            var day = "天"
           }
-          ctx.fillText(day, 158, -5);
+          ctx.fillText(day, 162, -5);
         }
         else if (this.class == "date") {
           var d = new Date();
@@ -170,13 +171,18 @@
     function draw() {
       reset();
       ctx.fillStyle = "rgba(255,255,255,0.8)";
+
+
+      ctx.font = "bold 20px Arial";
+      ctx.fillText("极地时钟", 269, 300);
+
       ctx.font = "12px Arial"
-      ctx.fillText("seconds", 250, 27);
-      ctx.fillText("minutes", 252, 63);
-      ctx.fillText("hours", 264, 98);
-      ctx.fillText("day", 274, 134);
-      ctx.fillText("date", 270, 168);
-      ctx.fillText("month", 260, 203);
+      ctx.fillText("秒", 270, 27);
+      ctx.fillText("分钟", 259, 63);
+      ctx.fillText("小时", 259, 98);
+      ctx.fillText("天", 269, 134);
+      ctx.fillText("星期", 259, 168);
+      ctx.fillText("月", 269, 203);
 
       for (var i = 0; i < arcs.length; i++) {
         var a = arcs[i];
