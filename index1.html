@@ -5,7 +5,6 @@
         body {
             margin: 0;
             padding: 0;
-            /* background: rgba(0, 0, 48, 1); */
         }
 
         canvas {
@@ -39,47 +38,199 @@
     </div>
 
     <div class="canvas">
-        <canvas id="compass-clock" width="1200" height="1200">不支持显示</canvas>
+        <canvas id="compass-clock" width="900" height="900">不支持显示</canvas>
     </div>
 
 
     <script>
+        var hours = [];
+        var minutes = [];
+        var seconds = [];
+        var times = [];
 
-        var compassClockCanvas = document.getElementById('compass-clock');
-
-        if (compassClockCanvas.getContext) {
-            var ctx = compassClockCanvas.getContext('2d');
-            draw(ctx);
-        } else {
-            console.warn('此浏览器不支持Canvas');
-        }
-
-
-        // 初始化数据
         function init() {
+            initHour();
+            initMinute();
+            initSeconds();
 
+            times = [];
+
+            var h = new arc();
+            h.class = "hours";
+            h.r = 205;
+            arcs.push(h);
+
+            var m = new arc();
+            m.class = "mins";
+            m.r = 240;
+            arcs.push(m);
+
+            var s = new arc();
+            s.class = "secs";
+            s.r = 275;
+            arcs.push(s);
         }
-        // 重置
-        function reset(ctx) {
-            ctx.fillStyle = 'rgba(0, 0, 48, 1)';
-            ctx.fillRect(0, 0, 600, 600);
+
+        init();
+
+        function drawClock() {
+            var now = new Date();
+            var sec = now.getSeconds();
+            var min = now.getMinutes();
+            var hr = now.getHours();
+
+            var ctx = document.getElementById('compass-clock').getContext('2d');
+            ctx.save();
+            ctx.clearRect(0, 0, 600, 600);
+            ctx.translate(300, 300);
+            ctx.scale(2, 2);
+            ctx.rotate(-Math.PI / 90);
+            ctx.strokeStyle = "black";
+            ctx.fillStyle = "white";
+            ctx.lineWidth = 8;
+            ctx.lineCap = "round";
+
+            // Hour marks
+            ctx.save();
+            for (var i = 0; i < 12; i++) {
+                ctx.beginPath();
+                ctx.moveTo(100, 0);
+                // ctx.lineTo(120,0);
+                ctx.font = '8px Arial';
+                if (i === 0) {
+                    ctx.fillStyle = "red";
+                } else {
+                    ctx.fillStyle = "#000";
+                }
+                ctx.fillText(hours[i], 40, 0);
+                ctx.stroke();
+                ctx.rotate(Math.PI / 6);
+            }
+            ctx.restore();
+
+            // Minute marks
+            ctx.save();
+            for (i = 0; i < 60; i++) {
+                ctx.beginPath();
+                ctx.moveTo(117, 0);
+                ctx.font = '8px Arial';
+                if (i === 0) {
+                    ctx.fillStyle = "red";
+                } else {
+                    ctx.fillStyle = "#000";
+                }
+                ctx.fillText(minutes[i], 80, 0);
+                ctx.stroke();
+                ctx.rotate(Math.PI / 30);
+            }
+            ctx.restore();
+
+
+
+            // Seconds marks
+            ctx.save();
+            for (i = 0; i < 60; i++) {
+                ctx.beginPath();
+                ctx.moveTo(140, 0);
+                ctx.font = '8px Arial';
+                if (i === 0) {
+                    ctx.fillStyle = "red";
+                } else {
+                    ctx.fillStyle = "#000";
+                }
+                ctx.fillText(seconds[i], 120, 0);
+                ctx.stroke();
+                ctx.rotate(Math.PI / 30);
+            }
+            ctx.restore();
+
+            ctx.restore();
+
+            window.requestAnimationFrame(drawClock);
         }
 
-        // 绘制
-        function draw(ctx) {
-            console.log('开始绘制');
-            reset(ctx);
+        window.requestAnimationFrame(drawClock);
 
-            
 
+        function initHour() {
+            for (var i = 1; i <= 12; i++) {
+                hours.push(arabiaToSimplifiedChinese(i) + '点');
+            }
+        }
+
+        function initMinute() {
+            for (var i = 1; i <= 60; i++) {
+                minutes.push(arabiaToSimplifiedChinese(i) + '分');
+            }
+        }
+
+        function initSeconds() {
+            for (var i = 1; i <= 60; i++) {
+                seconds.push(arabiaToSimplifiedChinese(i) + '秒');
+            }
         }
 
 
+        function clock() {
+            this.class = "hour";
+            this.r = 100;
+            this.rot = 1;
+
+            this.draw = function () {
+                ctx.beginPath();
+                ctx.arc(300, 300, this.r, (Math.PI / (2 / 3)), this.rot, false);
+                ctx.lineWidth = 30;
+                ctx.strokeStyle = "hsla(" + (this.rot * (180 / Math.PI) + usr_color) + ",60%,50%,1)";
+                ctx.stroke();
+
+                ctx.save();
+                ctx.fillStyle = "rgba(0, 0, 48, 1)";
+                ctx.translate(300, 300);
+                ctx.rotate(this.rot);
+                ctx.font = "bold 14px Arial";
+                if (this.class == "secs") {
+                    var d = new Date();
+                    ctx.fillText(d.getSeconds(), 267, -5);
+                } else if (this.class == "mins") {
+                    var d = new Date();
+                    ctx.fillText(d.getMinutes(), 232, -5);
+                } else if (this.class == "hours") {
+                    var d = new Date();
+                    ctx.fillText(d.getHours(), 197, -5);
+                } else if (this.class == "day") {
+                    var d = new Date();
+                    var day = d.getDay();
+                    if (day == 1) {
+                        var day = "一"
+                    } else if (day == 2) {
+                        var day = "二"
+                    } else if (day == 3) {
+                        var day = "三"
+                    } else if (day == 4) {
+                        var day = "四"
+                    } else if (day == 5) {
+                        var day = "五"
+                    } else if (day == 6) {
+                        var day = "六"
+                    } else if (day == 7) {
+                        var day = "天"
+                    }
+                    ctx.fillText(day, 162, -5);
+                } else if (this.class == "date") {
+                    var d = new Date();
+                    ctx.fillText(d.getDate(), 127, -5);
+                } else if (this.class == "month") {
+                    var d = new Date();
+                    ctx.fillText(d.getMonth() + 1, 93, -5);
+                }
+                ctx.restore();
+            }
+        }
         //阿拉伯数字转换为简写汉字
-        function ArabiaToSimplifiedChinese(Num) {
+        function arabiaToSimplifiedChinese(Num) {
             for (i = Num.length - 1; i >= 0; i--) {
-                Num = Num.replace(",", "")//替换Num中的“,”
-                Num = Num.replace(" ", "")//替换Num中的空格
+                Num = Num.replace(",", "") //替换Num中的“,”
+                Num = Num.replace(" ", "") //替换Num中的空格
             }
             if (isNaN(Num)) { //验证输入的字符是否为数字
                 //alert("请检查小写金额是否正确");
@@ -93,43 +244,84 @@
                 if (part[0].length > 10) {
                     //alert("位数过大，无法计算");
                     return "";
-                }//若数量超过拾亿单位，提示
+                } //若数量超过拾亿单位，提示
                 tmpnewchar = ""
 
-                    // 1	2	3	4	5	6	7	8
-                    // 壹	贰	叁	肆	伍	陆	柒	捌
-                    // 9	0	十	百	千	万	亿	元
-                    // 玖	零	拾	佰	仟	万	亿	圆
+                // 1	2	3	4	5	6	7	8
+                // 壹	贰	叁	肆	伍	陆	柒	捌
+                // 9	0	十	百	千	万	亿	元
+                // 玖	零	拾	佰	仟	万	亿	圆
 
                 perchar = part[0].charAt(i);
                 switch (perchar) {
-                    case "0": tmpnewchar = "零" + tmpnewchar; break;
-                    case "1": tmpnewchar = "壹" + tmpnewchar; break;
-                    case "2": tmpnewchar = "贰" + tmpnewchar; break;
-                    case "3": tmpnewchar = "叁" + tmpnewchar; break;
-                    case "4": tmpnewchar = "肆" + tmpnewchar; break;
-                    case "5": tmpnewchar = "伍" + tmpnewchar; break;
-                    case "6": tmpnewchar = "陆" + tmpnewchar; break;
-                    case "7": tmpnewchar = "柒" + tmpnewchar; break;
-                    case "8": tmpnewchar = "捌" + tmpnewchar; break;
-                    case "9": tmpnewchar = "玖" + tmpnewchar; break;
+                    case "0":
+                        tmpnewchar = "零" + tmpnewchar;
+                        break;
+                    case "1":
+                        tmpnewchar = "壹" + tmpnewchar;
+                        break;
+                    case "2":
+                        tmpnewchar = "贰" + tmpnewchar;
+                        break;
+                    case "3":
+                        tmpnewchar = "叁" + tmpnewchar;
+                        break;
+                    case "4":
+                        tmpnewchar = "肆" + tmpnewchar;
+                        break;
+                    case "5":
+                        tmpnewchar = "伍" + tmpnewchar;
+                        break;
+                    case "6":
+                        tmpnewchar = "陆" + tmpnewchar;
+                        break;
+                    case "7":
+                        tmpnewchar = "柒" + tmpnewchar;
+                        break;
+                    case "8":
+                        tmpnewchar = "捌" + tmpnewchar;
+                        break;
+                    case "9":
+                        tmpnewchar = "玖" + tmpnewchar;
+                        break;
                 }
                 switch (part[0].length - i - 1) {
-                    case 0: tmpnewchar = tmpnewchar; break;
-                    case 1: if (perchar != 0) tmpnewchar = tmpnewchar + "拾"; break;
-                    case 2: if (perchar != 0) tmpnewchar = tmpnewchar + "佰"; break;
-                    case 3: if (perchar != 0) tmpnewchar = tmpnewchar + "仟"; break;
-                    case 4: tmpnewchar = tmpnewchar + "万"; break;
-                    case 5: if (perchar != 0) tmpnewchar = tmpnewchar + "拾"; break;
-                    case 6: if (perchar != 0) tmpnewchar = tmpnewchar + "佰"; break;
-                    case 7: if (perchar != 0) tmpnewchar = tmpnewchar + "仟"; break;
-                    case 8: tmpnewchar = tmpnewchar + "亿"; break;
-                    case 9: tmpnewchar = tmpnewchar + "十"; break;
+                    case 0:
+                        tmpnewchar = tmpnewchar;
+                        break;
+                    case 1:
+                        if (perchar != 0) tmpnewchar = tmpnewchar + "拾";
+                        break;
+                    case 2:
+                        if (perchar != 0) tmpnewchar = tmpnewchar + "佰";
+                        break;
+                    case 3:
+                        if (perchar != 0) tmpnewchar = tmpnewchar + "仟";
+                        break;
+                    case 4:
+                        tmpnewchar = tmpnewchar + "万";
+                        break;
+                    case 5:
+                        if (perchar != 0) tmpnewchar = tmpnewchar + "拾";
+                        break;
+                    case 6:
+                        if (perchar != 0) tmpnewchar = tmpnewchar + "佰";
+                        break;
+                    case 7:
+                        if (perchar != 0) tmpnewchar = tmpnewchar + "仟";
+                        break;
+                    case 8:
+                        tmpnewchar = tmpnewchar + "亿";
+                        break;
+                    case 9:
+                        tmpnewchar = tmpnewchar + "十";
+                        break;
                 }
                 newchar = tmpnewchar + newchar;
             }
             //替换所有无用汉字，直到没有此类无用的数字为止
-            while (newchar.search("零零") != -1 || newchar.search("零亿") != -1 || newchar.search("亿万") != -1 || newchar.search("零万") != -1) {
+            while (newchar.search("零零") != -1 || newchar.search("零亿") != -1 || newchar.search("亿万") != -1 || newchar
+                .search("零万") != -1) {
                 newchar = newchar.replace("零亿", "亿");
                 newchar = newchar.replace("亿万", "亿");
                 newchar = newchar.replace("零万", "万");
