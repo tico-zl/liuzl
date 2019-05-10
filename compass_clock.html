@@ -1,28 +1,29 @@
 <html>
     <head>
-        <link rel="stylesheet" href="./style.css">
+        <link rel="stylesheet" href="./css/compass_clock.css">
     </head>
 <head>
 
 </head>
 
 <body>
-    <div class="top" >
+    <header>
         <span class="title">罗盘时钟</span>
+    </header>
+
+    <div class="wrap">
+        <div class="halo-ring">
+                <ul><li></li><li></li><li></li></ul>
+        </div>
+        <div class="compass-clock">
+            <canvas id="compass-clock" width="600" height="600">不支持显示</canvas>
+        </div>
+        
     </div>
 
-    <div class="canvas">
-        <ul>
-            <li></li>
-            <li></li>
-            <li></li>
-        </ul>
-        <canvas id="compass-clock" width="900" height="900">不支持显示</canvas>
-    </div>
-
-    <div class="footer">
+    <footer class="footer">
         <!-- <span>TICO</span> -->
-    </div>
+    </footer>
 
     <script>
         window.requestAnimFrame = (function () {
