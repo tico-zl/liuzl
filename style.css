@@ -1,0 +1,90 @@
+
+body {
+  margin: 0;
+  padding: 0;
+  background: rgba(0, 0, 48, 1);
+}
+
+canvas {
+  position: absolute;
+  margin: 0 auto;
+  top: 100px;
+  left: 559px;
+  width: 600px;
+  height: 600px;
+}
+
+.top {
+  text-align:center;
+  font-size: 32px;
+  margin: 0 auto;
+  color: burlywood;
+}
+.top .title {
+  position: relative;
+}
+.footer {
+  position: absolute;
+  color: azure;
+  text-align: center;
+}
+.footer span {
+  position: absolute;
+  /* left:0; right:0; top:0; bottom:0; */
+  margin:auto;
+}
+.canvas {
+  height: 600px;
+  width: 600px;
+  margin: 40px auto 0;
+}
+
+ul {
+  width: 600px;
+  height: 600px;
+  position: relative;
+}
+ul::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: radial-gradient(circle at top left, #010131, #000030);
+  border-radius: 50%;
+}
+ul li {
+  border-radius: 50%;
+  background-color: yellow;
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  animation: aura 30s infinite linear;
+  mix-blend-mode: screen;
+  filter: blur(1vw);
+}
+ul li:nth-child(2) {
+  background-color: magenta;
+  animation-delay: -10s;
+}
+ul li:nth-child(3) {
+  background-color: cyan;
+  animation-direction: reverse;
+  animation-delay: -20s;
+}
+
+@keyframes aura {
+  25%,
+  75% {
+    border-radius: 60% 40% 40% 60% / 60% 40% 60% 40%;
+  }
+  50% {
+    border-radius: 40% 60% 60% 40% / 40% 60% 40% 60%;
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
