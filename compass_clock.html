@@ -1,5 +1,7 @@
 <html>
     <head>
+        <meta charset="UTF-8" name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+
         <link rel="stylesheet" href="./css/compass_clock.css">
     </head>
 <head>
@@ -115,7 +117,7 @@
             ctx.moveTo(300, 300);
             ctx.font = "16px Cursive";
             ctx.fillStyle = "#4caf50";
-            ctx.fillText('点', 390, 300);
+            ctx.fillText('点', 400, 300);
             ctx.fillText('分', 470, 300);
             ctx.fillText('秒', 540, 300);
             ctx.stroke();
@@ -359,6 +361,8 @@
             return newchar;
         }
     </script>
+
+    <script src="./js/adaptive.js"></script>
 </body>
 
 </html>
