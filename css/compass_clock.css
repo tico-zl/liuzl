@@ -4,45 +4,42 @@ body {
   padding: 0;
   background: rgba(0, 0, 48, 1);
 }
-
-canvas {
-  position: absolute;
-  margin: 0 auto;
-  top: 100px;
-  left: 559px;
-  width: 600px;
-  height: 600px;
-}
-
-.top {
+header {
   text-align:center;
   font-size: 32px;
-  margin: 0 auto;
+  letter-spacing: 10px;
   color: burlywood;
 }
-.top .title {
-  position: relative;
-}
-.footer {
+footer {
   position: absolute;
   color: azure;
   text-align: center;
 }
-.footer span {
+.halo-ring {
   position: absolute;
-  /* left:0; right:0; top:0; bottom:0; */
+  width: 650px;
+  height: 650px;
+  left:0; right:0; top:0; bottom:0;
   margin:auto;
+  z-index: 5;
 }
-.canvas {
-  height: 600px;
-  width: 600px;
-  margin: 40px auto 0;
+.compass-clock {
+  position: absolute;
+  width: 650px;
+  height: 650px;
+  left:50%;
+  left:0; right:0; top:0; bottom:0;
+  margin:auto;
+  z-index: 10;
 }
 
 ul {
+  position: relative;
   width: 600px;
   height: 600px;
-  position: relative;
+  list-style: none;
+  padding: 0;
+  margin: 0;
 }
 ul::after {
   content: "";
