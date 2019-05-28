@@ -13,15 +13,14 @@
         <span class="title">罗盘时钟</span>
     </header>
 
-    <div class="wrap">
+    <main>
         <div class="halo-ring">
                 <ul><li></li><li></li><li></li></ul>
         </div>
         <div class="compass-clock">
             <canvas id="compass-clock" width="600" height="600">不支持显示</canvas>
         </div>
-        
-    </div>
+    </main>
 
     <footer class="footer">
         <!-- <span>TICO</span> -->
@@ -44,7 +43,8 @@
         var times = [];
 
         var canvas = document.getElementById('compass-clock');
-        var dpr = window.devicePixelRatio || 1;
+        // var dpr = window.devicePixelRatio || 1;
+        var dpr = 1;
         var rect = canvas.getBoundingClientRect();
         var w = rect.width * dpr;
         var h = rect.height * dpr;
