@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <title>合约仓位风险规划工具</title>
+  <title>合约仓位风险规划工具 v2</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     :root {
@@ -98,7 +98,6 @@
       color: var(--text-muted);
     }
 
-    /* 表单 */
     .form-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -192,7 +191,6 @@
       line-height: 1.5;
     }
 
-    /* 结果卡片 */
     .scenario-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
@@ -293,10 +291,10 @@
           <span class="title-pill">BTC · ETH · BNB · USDT-M 永续</span>
         </div>
         <div class="subtitle">
-          输入你的本金、进场 / 止损 / 止盈价格与杠杆，自动生成三档仓位方案：较安全 · 中等风险 · 激进不建议。
+          输入本金、进场 / 止损 / 止盈与杠杆，评估三档仓位方案，并可按目标最大可承受回撤反推推荐名义价值。
         </div>
       </div>
-      <div class="badge-symbol" id="symbolBadge">BTCUSDT · 全仓风险估算</div>
+      <div class="badge-symbol" id="symbolBadge">BTCUSDT · MMR 表 A · 全仓风险估算</div>
     </header>
 
     <div class="layout">
@@ -319,6 +317,14 @@
             </div>
 
             <div>
+              <label for="mmrSet">MMR 表</label>
+              <select id="mmrSet">
+                <option value="set1">MMR 表 A</option>
+                <option value="set2">MMR 表 B</option>
+              </select>
+            </div>
+
+            <div>
               <label>方向</label>
               <div class="side-toggle" id="sideToggle">
                 <button type="button" data-side="long" class="active">做多</button>
@@ -328,13 +334,13 @@
             </div>
 
             <div>
-              <label for="balance">本金 (USDT)</label>
-              <input type="number" id="balance" value="10000" min="1" step="1" />
+              <label for="leverage">杠杆倍数</label>
+              <input type="number" id="leverage" value="50" min="1" step="1" />
             </div>
 
             <div>
-              <label for="leverage">杠杆倍数</label>
-              <input type="number" id="leverage" value="50" min="1" step="1" />
+              <label for="balance">本金 (USDT)</label>
+              <input type="number" id="balance" value="10000" min="1" step="1" />
             </div>
 
             <div>
@@ -347,16 +353,29 @@
               <input type="number" id="stopLossPrice" placeholder="例如 91500" step="0.01" />
             </div>
 
-            <div class="form-row-full">
+            <div>
               <label for="takeProfitPrice">止盈价格</label>
               <input type="number" id="takeProfitPrice" placeholder="例如 87500" step="0.01" />
+            </div>
+
+            <div class="form-row-full">
+              <label for="maxDrawdown">
+                目标最大可承受反向波动（% · 可选）
+              </label>
+              <input
+                type="number"
+                id="maxDrawdown"
+                placeholder="例如 5 表示希望至少能抗 5% 反向波动"
+                min="0"
+                step="0.1"
+              />
             </div>
           </div>
 
           <button type="submit" class="btn-primary">计算三档仓位方案</button>
           <div class="hint">
-            · 假设账户只持有这一笔仓位（全仓），用于估算强平价与可承受波动。<br/>
-            · 维持保证金公式：<strong>MM = 名义价值 × MMR + 速算额</strong>，MMR 与速算额来自你给定的阶梯表。
+            · 假设账户只持有这一笔仓位（全仓），用于估算强平价与可承受波动。<br />
+            · 维持保证金公式：<strong>MM = 名义价值 × MMR + 速算额</strong>，MMR 与速算额来自当前选择的 MMR 表。
           </div>
         </form>
       </section>
@@ -365,7 +384,11 @@
       <section class="card">
         <div class="card-header">
           <div class="card-title">方案结果</div>
-          <div class="card-tag">方案 A · B · C 按使用最大可开名义价值的 20% / 30% / 40% 估算</div>
+          <div class="card-tag">方案 A · B · C 基于「余额 × 杠杆」理论最大可开仓位的 20% / 30% / 40%</div>
+        </div>
+
+        <div id="riskSummary" class="hint" style="margin-bottom: 10px;">
+          未设置最大可承受回撤，将按余额×杠杆给出三档方案。
         </div>
 
         <div class="scenario-grid">
@@ -479,29 +502,39 @@
   </div>
 
   <script>
-    // ------------------ MMR 表配置（BTC / ETH / BNB 共用） ------------------
-    const mmrTiers = [
-      { min: 0, max: 10000, maxLev: 75, mmr: 0.005, quick: 0 },
-      { min: 10000, max: 100000, maxLev: 50, mmr: 0.01, quick: 50 },
+    // ------------------ 两套 MMR 表配置（目前数值相同，方便以后改） ------------------
+    const baseTiers = [
+      { min: 0, max: 10000,   maxLev: 75, mmr: 0.005, quick: 0 },
+      { min: 10000, max: 100000, maxLev: 50, mmr: 0.01,  quick: 50 },
       { min: 100000, max: 160000, maxLev: 40, mmr: 0.015, quick: 550 },
-      { min: 160000, max: 800000, maxLev: 25, mmr: 0.02, quick: 1350 },
+      { min: 160000, max: 800000, maxLev: 25, mmr: 0.02,  quick: 1350 },
       { min: 800000, max: 1600000, maxLev: 20, mmr: 0.025, quick: 5350 },
       { min: 1600000, max: 8000000, maxLev: 10, mmr: 0.05, quick: 45350 },
-      { min: 8000000, max: 16000000, maxLev: 5, mmr: 0.10, quick: 445350 },
+      { min: 8000000, max: 16000000, maxLev: 5,  mmr: 0.10, quick: 445350 },
       { min: 16000000, max: 20000000, maxLev: 4, mmr: 0.125, quick: 845350 },
-      { min: 20000000, max: 40000000, maxLev: 2, mmr: 0.25, quick: 3345350 },
-      { min: 40000000, max: 80000000, maxLev: 1, mmr: 0.5, quick: 13345350 }
+      { min: 20000000, max: 40000000, maxLev: 2, mmr: 0.25,  quick: 3345350 },
+      { min: 40000000, max: 80000000, maxLev: 1, mmr: 0.5,   quick: 13345350 }
     ];
 
-    // 如果未来 BTC/ETH/BNB 想用不同表，可以在这里拆分
-    const symbolMMR = {
-      BTCUSDT: mmrTiers,
-      ETHUSDT: mmrTiers,
-      BNBUSDT: mmrTiers
+    const mmrSets = {
+      set1: {
+        name: "MMR 表 A",
+        tiers: JSON.parse(JSON.stringify(baseTiers))
+      },
+      set2: {
+        name: "MMR 表 B",
+        tiers: JSON.parse(JSON.stringify(baseTiers))
+      }
     };
 
-    function getTier(symbol, notional) {
-      const tiers = symbolMMR[symbol] || mmrTiers;
+    let currentMmrKey = "set1";
+
+    function getCurrentTiers() {
+      return mmrSets[currentMmrKey].tiers;
+    }
+
+    function getTierForNotional(notional) {
+      const tiers = getCurrentTiers();
       for (let i = 0; i < tiers.length; i++) {
         const t = tiers[i];
         const isLast = i === tiers.length - 1;
@@ -512,7 +545,6 @@
           return t;
         }
       }
-      // 默认用最高层
       return tiers[tiers.length - 1];
     }
 
@@ -526,8 +558,79 @@
       return (v * 100).toFixed(decimals) + "%";
     }
 
+    // 计算给定名义价值时的"可承受反向波动"（百分比）
+    function adversePctForNotional({ notional, balance, entry, side }) {
+      if (!isFinite(notional) || notional <= 0) return 0;
+      const tier = getTierForNotional(notional);
+      const mm = notional * tier.mmr + tier.quick;
+      if (balance <= mm) return 0;
+
+      let liq;
+      if (side === "long") {
+        liq = entry + (entry * (mm - balance)) / notional;
+      } else {
+        liq = entry - (entry * (mm - balance)) / notional;
+      }
+      if (!isFinite(liq)) return 0;
+
+      let adv;
+      if (side === "long") {
+        adv = (entry - liq) / entry;
+      } else {
+        adv = (liq - entry) / entry;
+      }
+      return Math.max(0, adv);
+    }
+
+    // 按目标最大可承受回撤反推名义价值（取能满足该回撤的最大 notional）
+    function computeRiskBasedNotional({
+      balance,
+      leverage,
+      entry,
+      side,
+      targetDrawdown
+    }) {
+      if (!targetDrawdown || targetDrawdown <= 0) return null;
+      const maxNotional = balance * leverage;
+      if (!isFinite(maxNotional) || maxNotional <= 0) return null;
+
+      let low = 1;
+      let high = maxNotional;
+      let best = 0;
+
+      for (let i = 0; i < 50; i++) {
+        const mid = (low + high) / 2;
+        const adv = adversePctForNotional({
+          notional: mid,
+          balance,
+          entry,
+          side
+        });
+
+        if (adv >= targetDrawdown) {
+          best = mid;
+          low = mid;
+        } else {
+          high = mid;
+        }
+      }
+
+      if (best <= 0) return null;
+
+      const tier = getTierForNotional(best);
+      const im = best / leverage;
+      const mm = best * tier.mmr + tier.quick;
+      const adv = adversePctForNotional({
+        notional: best,
+        balance,
+        entry,
+        side
+      });
+
+      return { notional: best, im, mm, adv, tier };
+    }
+
     function computeScenario({
-      symbol,
       side,
       balance,
       leverage,
@@ -543,19 +646,14 @@
         return { valid: false };
       }
 
-      // 保证不超过我们阶梯的最大值
-      const tiers = symbolMMR[symbol] || mmrTiers;
+      const tiers = getCurrentTiers();
       const maxTierNotional = tiers[tiers.length - 1].max;
       if (notional > maxTierNotional) notional = maxTierNotional;
 
-      const tier = getTier(symbol, notional);
+      const tier = getTierForNotional(notional);
       const im = notional / leverage;
       const mm = notional * tier.mmr + tier.quick;
 
-      // 预估强平价（全仓，忽略手续费）
-      // Equity_open = balance
-      // Long: balance + N*(Pliq - E)/E = MM
-      // Short: balance + N*(E - Pliq)/E = MM
       let liqPrice;
       if (balance <= mm) {
         liqPrice = NaN;
@@ -565,7 +663,6 @@
         liqPrice = entry - (entry * (mm - balance)) / notional;
       }
 
-      // 最大可承受反向波动（价格偏离进场的幅度）
       let adversePct = NaN;
       if (isFinite(liqPrice)) {
         if (side === "long") {
@@ -575,15 +672,14 @@
         }
       }
 
-      // 止盈 / 止损盈亏
       let pnlTp = NaN;
       let pnlSl = NaN;
       if (side === "long") {
-        pnlTp = notional * (tp - entry) / entry;
-        pnlSl = notional * (sl - entry) / entry;
+        pnlTp = (notional * (tp - entry)) / entry;
+        pnlSl = (notional * (sl - entry)) / entry;
       } else {
-        pnlTp = notional * (entry - tp) / entry;
-        pnlSl = notional * (entry - sl) / entry;
+        pnlTp = (notional * (entry - tp)) / entry;
+        pnlSl = (notional * (entry - sl)) / entry;
       }
 
       const pnlTpPctOnBalance = pnlTp / balance;
@@ -604,7 +700,7 @@
       };
     }
 
-    function renderScenario(prefix, scenario) {
+    function renderScenario(prefix, scenario, targetDrawdown) {
       const setText = (id, text, cls) => {
         const el = document.getElementById(prefix + "_" + id);
         if (!el) return;
@@ -651,7 +747,6 @@
         setText("move", "—");
       }
 
-      // 止盈 / 止损
       const tpCls = scenario.pnlTp >= 0 ? "text-success" : "text-danger";
       const slCls = scenario.pnlSl >= 0 ? "text-success" : "text-danger";
 
@@ -672,8 +767,8 @@
         slCls
       );
 
-      // 备注
-      let note = `当前所在层级：名义 ${scenario.tier.min.toLocaleString()} - ${scenario.tier.max.toLocaleString()}，维持保证金率 ${(scenario.tier.mmr*100).toFixed(2)}%，速算额 ${scenario.tier.quick.toLocaleString()} USDT。`;
+      let note = `当前所在层级：名义 ${scenario.tier.min.toLocaleString()} - ${scenario.tier.max.toLocaleString()}，维持保证金率 ${(scenario.tier.mmr * 100).toFixed(2)}%，速算额 ${scenario.tier.quick.toLocaleString()} USDT。`;
+
       if (scenario.adversePct < 0.02) {
         note += " 抗风险能力极弱，稍有波动就可能接近平仓。";
       } else if (scenario.adversePct < 0.04) {
@@ -681,10 +776,74 @@
       } else {
         note += " 抗风险相对充足，可结合策略灵活持仓。";
       }
+
+      if (targetDrawdown && targetDrawdown > 0 && isFinite(scenario.adversePct)) {
+        if (scenario.adversePct >= targetDrawdown) {
+          note += ` 已达到你设定的最大可承受回撤 ${formatPct(
+            targetDrawdown,
+            2
+          )} 要求。`;
+        } else {
+          note += ` 未达到你设定的最大可承受回撤 ${formatPct(
+            targetDrawdown,
+            2
+          )}，建议降低名义价值或杠杆。`;
+        }
+      }
+
       setText("note", note);
     }
 
-    // 侧边切换
+    function renderRiskSummary({
+      riskBased,
+      targetDrawdown,
+      scenarioA,
+      scenarioB,
+      scenarioC,
+      balance,
+      leverage
+    }) {
+      const el = document.getElementById("riskSummary");
+      if (!el) return;
+
+      if (!targetDrawdown || targetDrawdown <= 0) {
+        el.textContent =
+          "未设置最大可承受回撤，将按余额×杠杆给出三档方案。";
+        return;
+      }
+
+      const maxNotional = balance * leverage;
+
+      if (!riskBased) {
+        el.textContent = `在当前本金与杠杆下，无法满足你设定的最大可承受回撤 ${formatPct(
+          targetDrawdown,
+          2
+        )}。请降低杠杆或提高本金。`;
+        return;
+      }
+
+      const ratio = riskBased.notional / maxNotional;
+      let text = `基于你设定的最大可承受反向波动 ${formatPct(
+        targetDrawdown,
+        2
+      )}，推荐最大名义价值约为 ${formatUsd(
+        riskBased.notional,
+        0
+      )}，约为余额×杠杆理论最大仓位的 ${(ratio * 100).toFixed(1)}%。`;
+
+      const safe = (s) =>
+        s && s.valid && riskBased.notional > 0
+          ? `${((s.notional / riskBased.notional) * 100).toFixed(1)}%`
+          : "—";
+
+      text += ` 当前方案使用比例：A ≈ ${safe(
+        scenarioA
+      )}，B ≈ ${safe(scenarioB)}，C ≈ ${safe(scenarioC)} 相当于推荐值。`;
+
+      el.textContent = text;
+    }
+
+    // 方向切换
     const sideToggle = document.getElementById("sideToggle");
     sideToggle.addEventListener("click", (e) => {
       if (e.target.tagName !== "BUTTON") return;
@@ -695,28 +854,41 @@
       );
     });
 
+    // 交易对 & MMR 选择时更新右上角徽标
     const symbolSelect = document.getElementById("symbol");
-    symbolSelect.addEventListener("change", () => {
+    const mmrSelect = document.getElementById("mmrSet");
+    function updateBadge() {
       const symbol = symbolSelect.value;
+      const mmrName = mmrSets[currentMmrKey].name;
       document.getElementById(
         "symbolBadge"
-      ).textContent = `${symbol} · 全仓风险估算`;
+      ).textContent = `${symbol} · ${mmrName} · 全仓风险估算`;
+    }
+    symbolSelect.addEventListener("change", updateBadge);
+    mmrSelect.addEventListener("change", () => {
+      currentMmrKey = mmrSelect.value;
+      updateBadge();
     });
 
     document
       .getElementById("plannerForm")
       .addEventListener("submit", function (e) {
         e.preventDefault();
-        const symbol = document.getElementById("symbol").value;
         const side = document.getElementById("side").value;
         const balance = parseFloat(document.getElementById("balance").value);
         const leverage = parseFloat(document.getElementById("leverage").value);
         const entry = parseFloat(document.getElementById("entryPrice").value);
         const sl = parseFloat(document.getElementById("stopLossPrice").value);
         const tp = parseFloat(document.getElementById("takeProfitPrice").value);
+        const maxDrawdownInput = parseFloat(
+          document.getElementById("maxDrawdown").value
+        );
+        const targetDrawdown =
+          isNaN(maxDrawdownInput) || maxDrawdownInput <= 0
+            ? 0
+            : maxDrawdownInput / 100;
 
         const baseParams = {
-          symbol,
           side,
           balance,
           leverage,
@@ -729,9 +901,30 @@
         const scenarioB = computeScenario({ ...baseParams, multiplier: 0.3 });
         const scenarioC = computeScenario({ ...baseParams, multiplier: 0.4 });
 
-        renderScenario("scenarioA", scenarioA);
-        renderScenario("scenarioB", scenarioB);
-        renderScenario("scenarioC", scenarioC);
+        const riskBased =
+          targetDrawdown > 0
+            ? computeRiskBasedNotional({
+                balance,
+                leverage,
+                entry,
+                side,
+                targetDrawdown
+              })
+            : null;
+
+        renderScenario("scenarioA", scenarioA, targetDrawdown);
+        renderScenario("scenarioB", scenarioB, targetDrawdown);
+        renderScenario("scenarioC", scenarioC, targetDrawdown);
+
+        renderRiskSummary({
+          riskBased,
+          targetDrawdown,
+          scenarioA,
+          scenarioB,
+          scenarioC,
+          balance,
+          leverage
+        });
       });
   </script>
 </body>
